@@ -10,10 +10,12 @@ Se hai appena scaricato il progetto o installato un nuovo IDE, esegui questi pas
 
 1. **Apri il Terminale**: All'interno del tuo IDE (es. IntelliJ, VSCode, PyCharm), apri una finestra di Terminale (generalmente si trova nel menu `View -> Terminal` o in basso nella finestra).
 2. **Verifica di essere nella cartella giusta**: Assicurati che il terminale punti alla cartella del progetto (es. `.../biological-data-regression`).
-3. **Verifica l'installazione di Python**: Controlla se Python è correttamente installato digitando:
+3. **Verifica l'installazione di Python**: Controlla se Python è correttamente installato digitando (su macOS/Linux):
    ```bash
    python3 --version
-   # Se il comando precedente ti dà errore (molto comune su Windows), prova:
+   ```
+   Se il comando precedente ti dà errore (molto comune su Windows), prova:
+   ```bash
    python --version
    ```
    *(Se il comando restituisce un errore "not found" o simile, devi scaricare e installare Python da [python.org](https://www.python.org/). Su Windows, durante l'installazione ricordati di spuntare l'opzione "Add Python to PATH" o "Add python.exe to PATH").*
@@ -24,21 +26,34 @@ Se hai appena scaricato il progetto o installato un nuovo IDE, esegui questi pas
 
 Se è la prima volta che avvii il progetto, è fondamentale creare un "ambiente virtuale" per mantenere le librerie isolate dal resto del sistema.
 
-### Crea e attiva l'ambiente virtuale:
+### Crea l'ambiente virtuale:
+
+Su macOS/Linux:
 ```bash
-# Crea l'ambiente virtuale nella cartella ".venv"
-# (Usa "python" invece di "python3" se sei su Windows e ti dà errore)
 python3 -m venv .venv
+```
 
-# Attiva l'ambiente su macOS/Linux:
+Su Windows (o se il comando sopra dà errore):
+```bash
+python -m venv .venv
+```
+
+### Attiva l'ambiente virtuale:
+
+Su macOS/Linux:
+```bash
 source .venv/bin/activate
+```
 
-# (SE USI WINDOWS, il comando di attivazione è invece: .venv\Scripts\activate)
+Su Windows:
+```bat
+.venv\Scripts\activate
 ```
 
 ### Installa le librerie matematiche necessarie:
+
+Installa Numpy, Pandas, Matplotlib, Scipy e Certifi:
 ```bash
-# Installa Numpy, Pandas, Matplotlib, Scipy e Certifi
 pip install -r requirements.txt
 ```
 
@@ -48,8 +63,8 @@ pip install -r requirements.txt
 
 Questo è il comando principale. Avvia `main.py`, che a sua volta richiama a catena le Fasi dalla 1 alla 6. Il programma stamperà a schermo calcoli e matrici, ti mostrerà i grafici in finestre pop-up, e ti chiederà un input interattivo durante la Fase 4 e la Fase 6.
 
+Esegue l'analisi completa dall'inizio alla fine:
 ```bash
-# Esegue l'analisi completa dall'inizio alla fine
 python main.py
 ```
 
