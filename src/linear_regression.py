@@ -342,17 +342,24 @@ def run_phase4(df: pd.DataFrame,
     x_mid    = (x_min + x_max) / 2.0
     y_mid_hat = predict(x_mid, a, b)
 
-    # Confronto con media dei valori osservati nell'intorno di x_mid (±10% range)
-    tol      = (x_max - x_min) * 0.10
-    mask     = np.abs(x_all - x_mid) <= tol
+    # Confronto con media dei valori osservati nell'intorno di x_mid
+    # Tolleranza adattiva: parte al 30% del range, si espande se non trova punti
+    for tol_pct in [0.30, 0.50, 1.00]:
+        tol  = (x_max - x_min) * tol_pct
+        mask = np.abs(x_all - x_mid) <= tol
+        if mask.sum() > 0:
+            break
     y_nearby = y_all[mask]
     y_nearby_mean = float(np.mean(y_nearby)) if len(y_nearby) > 0 else float("nan")
 
     print(f"\n  [4.1] Interpolazione nel punto medio delle ascisse:")
     print(f"        x_mid = ({x_min:.4f} + {x_max:.4f}) / 2 = {x_mid:.4f}")
     print(f"        ŷ(x_mid)                    = {y_mid_hat:.4f}")
-    print(f"        Media osservati nell'intorno = {y_nearby_mean:.4f}  "
-          f"(n={len(y_nearby)} campioni entro ±10% del range)")
+    if not np.isnan(y_nearby_mean):
+        print(f"        Media osservati nell'intorno = {y_nearby_mean:.4f}  "
+              f"(n={len(y_nearby)} campioni entro ±{tol_pct*100:.0f}% del range)")
+    else:
+        print(f"        (Nessun campione nell'intorno — dataset troppo piccolo per confronto empirico)")
 
     # ── 2. Ascissa dell'ordinata media (inversione retta) ────────────────────
     # y = ax + b  →  x = (y - b) / a
