@@ -26,4 +26,36 @@ Il codice è strutturato seguendo una rigorosa pipeline numerica, in risposta al
 *   **Data Cleaning Dinamico:** Implementazione di un algoritmo interattivo per l'individuazione e l'eliminazione dei dati anomali (outlier) basato sullo scostamento dal modello lineare.
 
 ## 💻 Requisiti e Utilizzo
-*(In questa sezione, da compilare a fine sviluppo, verranno indicate le librerie necessarie, es. `numpy`, `pandas`, `matplotlib`, e i comandi per eseguire lo script).*
+
+Il progetto è compatibile con macOS, Linux e Windows. Richiede **Python 3.12+**.
+Tutte le dipendenze sono specificate nel file `requirements.txt`. Non vengono utilizzate librerie di machine learning ad alto livello (come `scikit-learn` o `scipy.stats.linregress`) per i calcoli centrali, al fine di dimostrare la costruzione algebrica degli algoritmi da zero.
+
+### Installazione
+
+1. Clona il repository e posizionati nella cartella principale.
+2. Crea e attiva un ambiente virtuale (consigliato):
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate  # Su Windows: .venv\Scripts\activate
+   ```
+3. Installa le dipendenze necessarie:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Esecuzione della Pipeline
+
+L'intero progetto (Fasi 1-6) è centralizzato in `main.py`. Eseguendo questo script, le fasi si susseguiranno in ordine, stampando l'analisi a terminale e salvando i grafici nella cartella `data/processed/plots/`.
+
+```bash
+python main.py
+```
+
+*Nota: Durante l'esecuzione ti verrà chiesto di interagire in due fasi specifiche:*
+- **Fase 4**: Inserire un valore di test per valutarne l'interpolazione o estrapolazione.
+- **Fase 6**: Un loop iterativo ti permetterà di valutare e rimuovere eventuali outlier individuati dal modello.
+
+Per eseguire script specifici, ad esempio per scaricare nuovamente il dataset reale da NCBI GEO, puoi usare:
+```bash
+python src/data_ingestion.py
+```
