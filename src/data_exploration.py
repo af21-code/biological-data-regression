@@ -46,6 +46,11 @@ def load_dataset(path: str) -> pd.DataFrame:
         DataFrame con i dati caricati.
     """
     df = pd.read_csv(path)
+    # Se il file ha una colonna 'sample_id' o simile come primo campo stringa,
+    # la impostiamo come indice per non includerla nei calcoli numerici.
+    str_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
+    if str_cols:
+        df = df.set_index(str_cols[0])
     print(f"\n{'='*55}")
     print(f"  Dataset: {Path(path).name}")
     print(f"{'='*55}")
