@@ -4,13 +4,30 @@ Questo documento riassume i comandi principali per configurare ed eseguire il pr
 
 *Nota: I comandi sono pensati per l'uso da terminale (su macOS, Linux o dal terminale integrato del tuo IDE come IntelliJ o VSCode).*
 
+## 0. Prerequisiti e Controlli Iniziali
+
+Se hai appena scaricato il progetto o installato un nuovo IDE, esegui questi passaggi preliminari:
+
+1. **Apri il Terminale**: All'interno del tuo IDE (es. IntelliJ, VSCode, PyCharm), apri una finestra di Terminale (generalmente si trova nel menu `View -> Terminal` o in basso nella finestra).
+2. **Verifica di essere nella cartella giusta**: Assicurati che il terminale punti alla cartella del progetto (es. `.../biological-data-regression`).
+3. **Verifica l'installazione di Python**: Controlla se Python è correttamente installato digitando:
+   ```bash
+   python3 --version
+   # Se il comando precedente ti dà errore (molto comune su Windows), prova:
+   python --version
+   ```
+   *(Se il comando restituisce un errore "not found" o simile, devi scaricare e installare Python da [python.org](https://www.python.org/). Su Windows, durante l'installazione ricordati di spuntare l'opzione "Add Python to PATH" o "Add python.exe to PATH").*
+
+---
+
 ## 1. Configurazione Iniziale (Una tantum)
 
-Se è la prima volta che avvii il progetto, è buona norma creare un "ambiente virtuale" per mantenere le librerie pulite e isolate dal resto del sistema.
+Se è la prima volta che avvii il progetto, è fondamentale creare un "ambiente virtuale" per mantenere le librerie isolate dal resto del sistema.
 
 ### Crea e attiva l'ambiente virtuale:
 ```bash
 # Crea l'ambiente virtuale nella cartella ".venv"
+# (Usa "python" invece di "python3" se sei su Windows e ti dà errore)
 python3 -m venv .venv
 
 # Attiva l'ambiente su macOS/Linux:
