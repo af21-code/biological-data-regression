@@ -390,7 +390,14 @@ def select_target_and_features(
 
     # Matrice X finale: trasposta → (campioni × feature)
     X_df = expr_df.loc[selected_probes].T
-    X_df.columns = [probe_to_gene.get(p, p) + f"_{p}" for p in selected_probes]
+    def _col_name(probe_id: str) -> str:
+        gene = probe_to_gene.get(probe_id, "")
+        # Se il simbolo genico è noto e diverso dall'ID probe, usa gene_probeID
+        # altrimenti usa solo il probe ID (evita duplicati come '206717_at_206717_at')
+        if gene and gene != probe_id:
+            return f"{gene}_{probe_id}"
+        return probe_id
+    X_df.columns = [_col_name(p) for p in selected_probes]
 
     return y_series, X_df, target_probe
 
