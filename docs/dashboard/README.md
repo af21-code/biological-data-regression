@@ -9,8 +9,15 @@ Eseguire un server locale ti garantisce che il browser carichi correttamente tut
 
 Apri il terminale dalla **radice del progetto** (la cartella principale `biological-data-regression`) ed esegui:
 ```bash
-python -m http.server 8000
+# Usa python3 se "python" non viene trovato sul tuo Mac
+python3 -m http.server 8000
 ```
+
+*Se ti trovi già all'interno della cartella `dashboard`, torna prima alla radice con questo comando:*
+```bash
+cd ../../ && python3 -m http.server 8000
+```
+
 Dopodiché apri il tuo browser all'indirizzo:
 [http://localhost:8000/docs/dashboard/index.html](http://localhost:8000/docs/dashboard/index.html)
 
