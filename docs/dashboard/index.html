@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analisi Numerica — Distrofia Muscolare</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-base: #090a0f;
+            --bg-surface: rgba(22, 24, 34, 0.6);
+            --bg-surface-hover: rgba(30, 34, 48, 0.8);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-primary: #3b82f6;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        header {
+            padding: 5rem 2rem 3rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1.2rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 30px;
+            color: #60a5fa;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 5rem;
+        }
+
+        .phase-section {
+            margin-bottom: 5rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .phase-section:nth-child(2) { animation-delay: 0.2s; }
+        .phase-section:nth-child(3) { animation-delay: 0.4s; }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .phase-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .phase-badge {
+            background: var(--accent-gradient);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        /* ── Grid System ── */
+        .plot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .plot-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plot-card:hover {
+            transform: translateY(-8px);
+            background: var(--bg-surface-hover);
+            border-color: rgba(96, 165, 250, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .plot-image-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* 4:3 Aspect Ratio */
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .plot-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 1rem;
+            transition: transform 0.5s ease;
+        }
+
+        .plot-card:hover .plot-image {
+            transform: scale(1.03);
+        }
+
+        .plot-info {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .plot-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .plot-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── Modal (Lightbox) ── */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-img {
+            max-width: 100%;
+            max-height: 85vh;
+            border-radius: var(--radius-md);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-caption {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 2rem;
+            right: 3rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 3rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+            z-index: 1001;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .plot-grid { grid-template-columns: 1fr; }
+            .modal-close { top: 1rem; right: 1.5rem; font-size: 2.5rem; }
+            header { padding: 4rem 1.5rem 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="badge">Visualizzazione Dati</div>
+        <h1>Dashboard Analisi Numerica</h1>
+        <p class="subtitle">Una panoramica completa e interattiva di tutti i risultati, i grafici e le metriche generati dalla pipeline di analisi sulla Distrofia Muscolare (GSE38417).</p>
+    </header>
+
+    <main>
+
+        <!-- FASE 1 -->
+        <section class="phase-section">
+            <div class="phase-header">
+                <div class="phase-badge">1</div>
+                <h2>Esplorazione e Statistica Descrittiva</h2>
+            </div>
+            <div class="plot-grid">
+                
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/covariance_heatmap.png', 'Heatmap della Matrice di Covarianza')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/covariance_heatmap.png" alt="Covarianza" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Heatmap della Covarianza</h3>
+                        <p class="plot-desc">Rappresentazione visiva di $C = \frac{1}{n} X_c^T X_c$. Usata per selezionare il predittore migliore per la Fase 2.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/correlation_heatmap.png', 'Heatmap della Matrice di Correlazione')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/correlation_heatmap.png" alt="Correlazione" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Heatmap di Correlazione</h3>
+                        <p class="plot-desc">Covarianza normalizzata in [-1, 1] per evidenziare le relazioni lineari pure tra le variabili espresse dai geni.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/ecdf_gaussian.png', 'ECDF vs CDF Gaussiana')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/ecdf_gaussian.png" alt="ECDF vs Gaussiana" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">ECDF vs CDF Gaussiana</h3>
+                        <p class="plot-desc">Verifica cruciale dell'assunzione di Normalità, prerequisito per l'affidabilità del metodo dei Minimi Quadrati (OLS).</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/histograms.png', 'Istogrammi di Densità')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/histograms.png" alt="Istogrammi" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Istogrammi di Densità</h3>
+                        <p class="plot-desc">Distribuzione di frequenza delle singole feature con curva gaussiana teorica sovrapposta.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/boxplots.png', 'Box Plot Affiancati')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/boxplots.png" alt="Boxplots" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Box Plot Affiancati</h3>
+                        <p class="plot-desc">Confronto di mediane e IQR (Inter-Quartile Range) per identificare preliminarmente la dispersione dei valori di espressione genica.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/bar_stats.png', 'Indicatori Statistici Generali')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/bar_stats.png" alt="Bar Stats" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Indicatori Statistici</h3>
+                        <p class="plot-desc">Riepilogo visivo di Mediana, Media e Varianza per ciascun predittore.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FASE 2-4 -->
+        <section class="phase-section">
+            <div class="phase-header">
+                <div class="phase-badge">2</div>
+                <h2>Regressione Lineare, Validazione e Interpolazione</h2>
+            </div>
+            <div class="plot-grid">
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase2_regression.png', 'Regressione Semplice Base')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase2_regression.png" alt="Reg Semplice" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Scatter e Retta OLS</h3>
+                        <p class="plot-desc">Visualizzazione della retta $y = ax + b$ calcolata algebricamente col metodo dei Minimi Quadrati sull'intero dataset.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase3_train_test_boxplot.png', 'Equità del Train/Test Split')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase3_train_test_boxplot.png" alt="Split Boxplot" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Equità del Data Splitting</h3>
+                        <p class="plot-desc">Verifica visiva che il Training set (90%) e il Test set (10%) campionino proporzionalmente lo stesso range di gravità clinica del Target.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase3_train_test_scatter.png', 'Validazione sul Test Set')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase3_train_test_scatter.png" alt="Test Scatter" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Validazione del Modello</h3>
+                        <p class="plot-desc">I campioni rossi (dati mai visti) vengono proiettati sulla retta addestrata sui campioni blu, dimostrando assenza di Overfitting.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase4_interpolation.png', 'Interpolazione ed Estrapolazione')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase4_interpolation.png" alt="Interpolation" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Interpolazione/Estrapolazione</h3>
+                        <p class="plot-desc">Operazioni analitiche dirette e inverse sulla retta. In evidenza i punti critici e l'input utente.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FASE 5-6 -->
+        <section class="phase-section">
+            <div class="phase-header">
+                <div class="phase-badge">3</div>
+                <h2>Modello Multilineare e Pulizia Outlier</h2>
+            </div>
+            <div class="plot-grid">
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase5_model_comparison.png', 'Confronto Modelli: Semplice vs Multilineare')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase5_model_comparison.png" alt="Model Comparison" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Confronto Prestazioni Modelli</h3>
+                        <p class="plot-desc">Bar chart riepilogativo delle metriche di errore e bontà di adattamento (R²). Evidenzia il rischio di overfitting del modello complesso sui dati di Test.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase5_actual_vs_predicted.png', 'Actual vs Predicted (Multivariato)')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase5_actual_vs_predicted.png" alt="Actual vs Pred" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Valori Reali vs Previsti</h3>
+                        <p class="plot-desc">Proiezione su un piano bidimensionale dei risultati della regressione in $R^{10}$. Fit quasi perfetto (diagonale) sul Training set.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase5_coefficients.png', 'Coefficienti del Modello Multilineare')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase5_coefficients.png" alt="Coefficients" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Importanza delle Feature ($\theta$)</h3>
+                        <p class="plot-desc">Magnitudo e segno di ogni coefficiente calcolato tramite le Equazioni Normali $\theta = (X^T X)^{-1} X^T y$.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase5_residual_histogram.png', 'Istogramma dei Residui')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase5_residual_histogram.png" alt="Residual Histogram" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Distribuzione dei Residui</h3>
+                        <p class="plot-desc">Verifica fondamentale dell'assunzione OLS: gli errori del modello seguono una distribuzione approssimativamente Normale centrata sullo zero.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" onclick="openModal('../../data/processed/plots/phase5_residuals.png', 'Scatter dei Residui')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase5_residuals.png" alt="Residual Scatter" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title">Scatter plot dei Residui</h3>
+                        <p class="plot-desc">Ricerca visiva di pattern anomali, eteroschedasticità o trend non lineari negli errori residui del modello multivariato.</p>
+                    </div>
+                </div>
+
+                <div class="plot-card" style="border-color: rgba(168, 85, 247, 0.4);" onclick="openModal('../../data/processed/plots/phase6_outlier_clean.png', 'Modello Finale: Pulizia Outlier')">
+                    <div class="plot-image-wrapper">
+                        <img class="plot-image" src="../../data/processed/plots/phase6_outlier_clean.png" alt="Outlier Clean" loading="lazy">
+                    </div>
+                    <div class="plot-info">
+                        <h3 class="plot-title" style="color: #c084fc;">Modello Finale dopo Outlier Removal</h3>
+                        <p class="plot-desc">La retta di regressione semplice, riaddestrata esclusivamente sui dati "puliti", privi dei campioni a massima devianza eliminati dal loop interattivo.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- The Modal Lightbox -->
+    <div id="plotModal" class="modal" onclick="closeModal(event)">
+        <button class="modal-close" onclick="closeModal(event)">&times;</button>
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img id="modalImg" class="modal-img" src="" alt="Plot">
+            <div id="modalCaption" class="modal-caption"></div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('plotModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+
+        function openModal(src, caption) {
+            modalImg.src = src;
+            modalCaption.innerHTML = caption;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(e) {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+    </script>
+
+</body>
+</html>

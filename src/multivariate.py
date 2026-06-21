@@ -20,6 +20,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from src.metrics import mse, rmse, r_squared, residuals
+from src.plot_utils import base_fig, save_or_show
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -270,21 +271,37 @@ def run_phase5(df: pd.DataFrame,
             print(f"  │  {met:<12s}│  {sv:12.6f} │  {ml_val:12.6f} │  {sign}{delta:12.6f} │")
         print(f"  └──────────────┴───────────────┴───────────────┴───────────────┘")
 
-    # ── 6. Plot ───────────────────────────────────────────────────────────────
+    # ── 6. Metriche per confronto finale ────────────────────────────────────
+    multi_metrics = {
+        "mse_train":  mse_tr,
+        "rmse_train": rmse_tr,
+        "r2_train":   r2_tr,
+        "mse_test":   mse_te,
+        "rmse_test":  rmse_te,
+        "r2_test":    r2_te,
+    }
+
+    # ── 7. Plot ───────────────────────────────────────────────────────────────
     if plots_dir:
-        p_actpred = f"{plots_dir}/phase5_actual_vs_predicted.png"
-        p_resid   = f"{plots_dir}/phase5_residuals.png"
-        p_coefs   = f"{plots_dir}/phase5_coefficients.png"
+        p_actpred  = f"{plots_dir}/phase5_actual_vs_predicted.png"
+        p_resid    = f"{plots_dir}/phase5_residuals.png"
+        p_coefs    = f"{plots_dir}/phase5_coefficients.png"
+        p_reshist  = f"{plots_dir}/phase5_residual_histogram.png"
+        p_compare  = f"{plots_dir}/phase5_model_comparison.png"
     else:
-        p_actpred = p_resid = p_coefs = None
+        p_actpred = p_resid = p_coefs = p_reshist = p_compare = None
 
     _plot_actual_vs_predicted(y_train, y_pred_train, y_test, y_pred_test,
                               target_col, output_path=p_actpred)
     _plot_residuals(y_pred_train, e_train, y_pred_test, e_test,
                     output_path=p_resid)
     _plot_coefficients(feature_cols, coefs, output_path=p_coefs)
+    _plot_residual_histogram(e_train, e_test, output_path=p_reshist)
+    if simple_metrics:
+        _plot_model_comparison(simple_metrics, multi_metrics,
+                               output_path=p_compare)
 
-    # ── 7. DataFrame risultati ────────────────────────────────────────────────
+    # ── 8. DataFrame risultati ────────────────────────────────────────────────
     results_train = pd.DataFrame({
         "y_true": y_train, "y_pred": y_pred_train, "residual": e_train
     })
@@ -293,36 +310,17 @@ def run_phase5(df: pd.DataFrame,
     })
 
     print("\n✅  Fase 5 completata.")
-    return theta, results_train, results_test
+    return theta, results_train, results_test, multi_metrics
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Funzioni di plotting private
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _base_fig(figsize=(10, 6)):
-    fig, ax = plt.subplots(figsize=figsize)
-    fig.patch.set_facecolor("#0f1117")
-    ax.set_facecolor("#1a1d27")
-    for spine in ax.spines.values():
-        spine.set_edgecolor("#333344")
-    ax.tick_params(colors="white")
-    return fig, ax
-
-
-def _save_or_show(fig, output_path):
-    plt.tight_layout()
-    if output_path:
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path, dpi=150, bbox_inches="tight",
-                    facecolor=fig.get_facecolor())
-        print(f"  → Plot salvato: {output_path}")
-    plt.show()
-
 
 def _plot_actual_vs_predicted(y_tr, yp_tr, y_te, yp_te, label, output_path=None):
     """Scatter plot Actual vs Predicted — linea y=x è il modello perfetto."""
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     all_vals = np.concatenate([y_tr, yp_tr, y_te, yp_te])
     lo, hi   = all_vals.min() - 0.5, all_vals.max() + 0.5
     ax.plot([lo, hi], [lo, hi], color="#555566", linewidth=1.5,
@@ -336,12 +334,12 @@ def _plot_actual_vs_predicted(y_tr, yp_tr, y_te, yp_te, label, output_path=None)
     ax.set_title("Fase 5 — Modello Multilineare: Actual vs Predicted",
                  color="white", fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_residuals(yp_tr, e_tr, yp_te, e_te, output_path=None):
     """Residui vs Valori predetti — i residui devono essere centrati sullo zero."""
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     ax.axhline(0, color="#555566", linewidth=1.5, linestyle="--")
     ax.scatter(yp_tr, e_tr, color="#4f8ef7", alpha=0.8, s=60, zorder=3,
                label=f"Training (n={len(yp_tr)})")
@@ -352,12 +350,12 @@ def _plot_residuals(yp_tr, e_tr, yp_te, e_te, output_path=None):
     ax.set_title("Fase 5 — Analisi dei Residui",
                  color="white", fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_coefficients(feature_cols, coefs, output_path=None):
     """Bar chart dei coefficienti θ (importanza relativa delle feature)."""
-    fig, ax = _base_fig(figsize=(12, 5))
+    fig, ax = base_fig(figsize=(12, 5))
     colors = ["#4f8ef7" if c >= 0 else "#f74f4f" for c in coefs]
     bars = ax.bar(range(len(feature_cols)), coefs, color=colors, alpha=0.85,
                   edgecolor="#ffffff33")
@@ -374,4 +372,104 @@ def _plot_coefficients(feature_cols, coefs, output_path=None):
                 bar.get_height() + (0.002 if val >= 0 else -0.006),
                 f"{val:+.3f}", ha="center", va="bottom" if val >= 0 else "top",
                 color="white", fontsize=8)
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
+
+
+def _plot_residual_histogram(e_train, e_test, output_path=None):
+    """
+    Istogramma dei residui con curva Gaussiana sovrapposta.
+
+    Verifica visiva dell'assunzione OLS: i residui devono essere
+    approssimativamente normali (media ≈ 0, distribuzione simmetrica).
+    """
+    from scipy import stats as sp_stats
+
+    fig, ax = base_fig(figsize=(10, 6))
+
+    all_residuals = np.concatenate([e_train, e_test])
+    n = len(all_residuals)
+
+    # Istogramma
+    ax.hist(e_train, bins=min(15, max(5, len(e_train) // 2)),
+            color="#4f8ef7", alpha=0.7, edgecolor="#0f1117",
+            linewidth=0.8, density=True, label=f"Training (n={len(e_train)})")
+    ax.hist(e_test, bins=min(10, max(3, len(e_test) // 2)),
+            color="#f74f4f", alpha=0.6, edgecolor="#0f1117",
+            linewidth=0.8, density=True, label=f"Test (n={len(e_test)})")
+
+    # Curva gaussiana sovrapposta (parametri espliciti)
+    mu = np.sum(all_residuals) / n
+    var = np.dot(all_residuals - mu, all_residuals - mu) / n
+    sigma = np.sqrt(var)
+    x_range = np.linspace(all_residuals.min() - sigma,
+                          all_residuals.max() + sigma, 200)
+    gauss = (1.0 / (sigma * np.sqrt(2 * np.pi))) * \
+            np.exp(-0.5 * ((x_range - mu) / sigma) ** 2)
+    ax.plot(x_range, gauss, color="#f7a94f", linewidth=2.5,
+            label=f"N(μ={mu:.3f}, σ={sigma:.3f})")
+
+    ax.axvline(0, color="#555566", linewidth=1.2, linestyle="--", alpha=0.7)
+    ax.set_xlabel("Residui  e = y − ŷ", color="#aaaacc")
+    ax.set_ylabel("Densità", color="#aaaacc")
+    ax.set_title("Fase 5 — Distribuzione dei Residui (verifica normalità OLS)",
+                 color="white", fontsize=13, pad=10)
+    ax.legend(facecolor="#0f1117", labelcolor="white", fontsize=9)
+    save_or_show(fig, output_path)
+
+
+def _plot_model_comparison(simple_m, multi_m, output_path=None):
+    """
+    Grouped bar chart che confronta le metriche della regressione semplice
+    vs multilineare — visualizzazione riepilogativa per l'esame.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig.patch.set_facecolor("#0f1117")
+
+    metric_groups = [
+        ("Training Set", ["mse_train", "rmse_train", "r2_train"],
+         ["MSE", "RMSE", "R²"]),
+        ("Test Set",     ["mse_test",  "rmse_test",  "r2_test"],
+         ["MSE", "RMSE", "R²"]),
+    ]
+
+    for ax, (title, keys, labels) in zip(axes, metric_groups):
+        ax.set_facecolor("#1a1d27")
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#333344")
+
+        x = np.arange(len(keys))
+        width = 0.32
+
+        vals_simple = [simple_m.get(k, 0) for k in keys]
+        vals_multi  = [multi_m.get(k, 0) for k in keys]
+
+        bars1 = ax.bar(x - width/2, vals_simple, width, color="#4f8ef7",
+                       alpha=0.85, label="Reg. Semplice", edgecolor="#0f1117")
+        bars2 = ax.bar(x + width/2, vals_multi,  width, color="#a855f7",
+                       alpha=0.85, label="Reg. Multilineare", edgecolor="#0f1117")
+
+        # Etichette sopra le barre
+        for bar, val in zip(list(bars1) + list(bars2),
+                            vals_simple + vals_multi):
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() * 1.02,
+                    f"{val:.4f}", ha="center", va="bottom",
+                    color="white", fontsize=8)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, color="white", fontsize=11)
+        ax.tick_params(colors="white")
+        ax.set_title(title, color="white", fontsize=12, pad=8)
+        ax.legend(facecolor="#0f1117", labelcolor="white", fontsize=9)
+
+    fig.suptitle("Confronto Modelli — Regressione Semplice vs Multilineare",
+                 color="white", fontsize=14, fontweight="bold", y=1.02)
+    plt.tight_layout()
+
+    if output_path:
+        from pathlib import Path
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=150, bbox_inches="tight",
+                    facecolor=fig.get_facecolor())
+        print(f"  → Plot salvato: {output_path}")
+    plt.show()

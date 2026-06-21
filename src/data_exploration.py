@@ -9,12 +9,16 @@ viene usata per i calcoli centrali: ogni indicatore è derivato dalla definizion
 
 Funzioni principali
 -------------------
-- load_dataset            : carica il CSV e ne stampa la struttura
-- descriptive_stats       : max, min, media, mediana, varianza, std
-- confidence_interval_90  : intervallo [m-δ, m+δ] al 90% centrato nella mediana
-- covariance_matrix       : matrice di covarianza C = (1/n) X_c^T X_c
-- plot_bar_stats          : bar chart degli indicatori
-- plot_boxplots           : box plot affiancati
+- load_dataset              : carica il CSV e ne stampa la struttura
+- descriptive_stats         : max, min, media, mediana, varianza, std
+- confidence_interval_90    : intervallo [m-δ, m+δ] al 90% centrato nella mediana
+- covariance_matrix         : matrice di covarianza C = (1/n) X_c^T X_c
+- correlation_from_cov      : matrice di correlazione R da C
+- plot_bar_stats            : bar chart degli indicatori
+- plot_boxplots             : box plot affiancati
+- plot_histograms           : istogrammi per ogni variabile continua
+- plot_covariance_heatmap   : heatmap della matrice di covarianza
+- plot_correlation_heatmap  : heatmap della matrice di correlazione di Pearson
 - plot_ecdf_vs_gaussian   : ECDF empirica vs CDF gaussiana teorica
 - run_phase1              : orchestratore completo della Fase 1
 """
@@ -214,6 +218,37 @@ def covariance_matrix(df: pd.DataFrame) -> pd.DataFrame:
     C = (X_centered.T @ X_centered) / n
 
     return pd.DataFrame(C, index=numeric_cols, columns=numeric_cols)
+
+
+def correlation_from_cov(cov_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcola la matrice di correlazione di Pearson dalla matrice di covarianza.
+
+    Formula
+    -------
+        R_ij = C_ij / (σ_i * σ_j)
+
+    dove σ_i = √C_ii  (deviazione standard della variabile i).
+
+    Parameters
+    ----------
+    cov_df : pd.DataFrame
+        Matrice di covarianza p×p.
+
+    Returns
+    -------
+    pd.DataFrame
+        Matrice di correlazione p×p con valori in [-1, 1].
+    """
+    C = cov_df.values.astype(float)
+    stds = np.sqrt(np.diag(C))           # σ_i = √C_ii
+    # Evita divisione per zero
+    stds[stds == 0] = 1e-12
+    # R_ij = C_ij / (σ_i * σ_j)
+    R = C / np.outer(stds, stds)
+    # Clip per sicurezza numerica
+    R = np.clip(R, -1.0, 1.0)
+    return pd.DataFrame(R, index=cov_df.index, columns=cov_df.columns)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -443,7 +478,220 @@ def plot_ecdf_vs_gaussian(df: pd.DataFrame, output_path: str = None):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. Orchestratore Fase 1
+# 8. Plot: Istogrammi per ogni variabile
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_histograms(df: pd.DataFrame, output_path: str = None):
+    """
+    Genera istogrammi per ogni variabile continua del dataset.
+
+    Ogni istogramma mostra la distribuzione di frequenza della variabile
+    con sovrapposizione della curva di densità gaussiana calcolata con
+    i parametri espliciti (media e deviazione standard dal calcolo diretto).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataset completo.
+    output_path : str, optional
+        Se specificato, salva il plot come immagine PNG.
+    """
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    n_vars = len(numeric_cols)
+    ncols_plot = min(3, n_vars)
+    nrows_plot = (n_vars + ncols_plot - 1) // ncols_plot
+
+    fig, axes = plt.subplots(nrows_plot, ncols_plot,
+                             figsize=(6 * ncols_plot, 4 * nrows_plot))
+    fig.patch.set_facecolor("#0f1117")
+    axes_flat = np.array(axes).flatten()
+
+    for i, col in enumerate(numeric_cols):
+        ax = axes_flat[i]
+        ax.set_facecolor("#1a1d27")
+
+        data = df[col].dropna().values.astype(float)
+        n = len(data)
+
+        # Istogramma
+        ax.hist(data, bins=min(15, max(5, n // 3)), color="#4f8ef7",
+                alpha=0.75, edgecolor="#0f1117", linewidth=0.8, density=True)
+
+        # Curva gaussiana sovrapposta
+        mu = np.sum(data) / n
+        var = np.dot(data - mu, data - mu) / n
+        sigma = np.sqrt(var)
+        x_range = np.linspace(data.min() - sigma, data.max() + sigma, 200)
+        gauss = (1.0 / (sigma * np.sqrt(2 * np.pi))) * \
+                np.exp(-0.5 * ((x_range - mu) / sigma) ** 2)
+        ax.plot(x_range, gauss, color="#f7a94f", linewidth=2,
+                label=f"N(μ={mu:.1f}, σ={sigma:.1f})")
+
+        ax.set_title(col, color="white", fontsize=10, pad=6)
+        ax.set_xlabel("Valore", color="#aaaacc", fontsize=8)
+        ax.set_ylabel("Densità", color="#aaaacc", fontsize=8)
+        ax.tick_params(colors="white", labelsize=8)
+        ax.legend(facecolor="#0f1117", labelcolor="white", fontsize=7,
+                  loc="upper right")
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#333344")
+
+    for j in range(n_vars, len(axes_flat)):
+        axes_flat[j].set_visible(False)
+
+    fig.suptitle("Istogrammi delle Variabili Continue",
+                 color="white", fontsize=14, fontweight="bold")
+    plt.tight_layout()
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=150, bbox_inches="tight",
+                    facecolor=fig.get_facecolor())
+        print(f"  → Plot salvato: {output_path}")
+    plt.show()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. Plot: Heatmap della matrice di covarianza
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_covariance_heatmap(cov_df: pd.DataFrame, output_path: str = None):
+    """
+    Genera una heatmap della matrice di covarianza con annotazioni numeriche.
+
+    Utilizza una colormap divergente centrata sullo zero:
+    valori positivi in toni caldi, negativi in toni freddi.
+
+    Parameters
+    ----------
+    cov_df : pd.DataFrame
+        Matrice di covarianza p×p.
+    output_path : str, optional
+        Se specificato, salva il plot come immagine PNG.
+    """
+    labels = cov_df.columns.tolist()
+    C = cov_df.values.astype(float)
+    n = len(labels)
+
+    fig, ax = plt.subplots(figsize=(max(8, n * 0.9), max(7, n * 0.8)))
+    fig.patch.set_facecolor("#0f1117")
+    ax.set_facecolor("#1a1d27")
+
+    vmax = np.max(np.abs(C))
+    im = ax.imshow(C, cmap="RdBu_r", aspect="auto",
+                   vmin=-vmax, vmax=vmax, interpolation="nearest")
+
+    # Annotazioni numeriche nelle celle
+    for i in range(n):
+        for j in range(n):
+            val = C[i, j]
+            color = "white" if abs(val) > vmax * 0.6 else "#cccccc"
+            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                    color=color, fontsize=max(6, 9 - n // 4))
+
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    # Abbrevia i nomi se troppo lunghi
+    short_labels = [l[:18] + "…" if len(l) > 20 else l for l in labels]
+    ax.set_xticklabels(short_labels, rotation=40, ha="right",
+                       color="white", fontsize=max(7, 10 - n // 5))
+    ax.set_yticklabels(short_labels, color="white",
+                       fontsize=max(7, 10 - n // 5))
+    ax.tick_params(colors="white")
+
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(colors="white")
+    cbar.set_label("Covarianza", color="white", fontsize=10)
+
+    ax.set_title("Matrice di Covarianza — C = (1/n) Xcᵀ Xc",
+                 color="white", fontsize=13, pad=12)
+
+    for spine in ax.spines.values():
+        spine.set_edgecolor("#333344")
+
+    plt.tight_layout()
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=150, bbox_inches="tight",
+                    facecolor=fig.get_facecolor())
+        print(f"  → Plot salvato: {output_path}")
+    plt.show()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. Plot: Heatmap della matrice di correlazione
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_correlation_heatmap(corr_df: pd.DataFrame, output_path: str = None):
+    """
+    Genera una heatmap della matrice di correlazione di Pearson.
+
+    La correlazione è derivata dalla covarianza:
+        R_ij = C_ij / (σ_i * σ_j)
+
+    I valori sono compresi in [-1, 1]:
+        +1 = correlazione lineare perfetta positiva
+         0 = nessuna correlazione lineare
+        -1 = correlazione lineare perfetta negativa
+
+    Parameters
+    ----------
+    corr_df : pd.DataFrame
+        Matrice di correlazione p×p.
+    output_path : str, optional
+        Se specificato, salva il plot come immagine PNG.
+    """
+    labels = corr_df.columns.tolist()
+    R = corr_df.values.astype(float)
+    n = len(labels)
+
+    fig, ax = plt.subplots(figsize=(max(8, n * 0.9), max(7, n * 0.8)))
+    fig.patch.set_facecolor("#0f1117")
+    ax.set_facecolor("#1a1d27")
+
+    im = ax.imshow(R, cmap="RdBu_r", aspect="auto",
+                   vmin=-1, vmax=1, interpolation="nearest")
+
+    # Annotazioni
+    for i in range(n):
+        for j in range(n):
+            val = R[i, j]
+            color = "white" if abs(val) > 0.6 else "#cccccc"
+            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                    color=color, fontsize=max(6, 9 - n // 4))
+
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    short_labels = [l[:18] + "…" if len(l) > 20 else l for l in labels]
+    ax.set_xticklabels(short_labels, rotation=40, ha="right",
+                       color="white", fontsize=max(7, 10 - n // 5))
+    ax.set_yticklabels(short_labels, color="white",
+                       fontsize=max(7, 10 - n // 5))
+    ax.tick_params(colors="white")
+
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(colors="white")
+    cbar.set_label("Correlazione di Pearson", color="white", fontsize=10)
+
+    ax.set_title("Matrice di Correlazione — R_ij = C_ij / (σ_i · σ_j)",
+                 color="white", fontsize=13, pad=12)
+
+    for spine in ax.spines.values():
+        spine.set_edgecolor("#333344")
+
+    plt.tight_layout()
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=150, bbox_inches="tight",
+                    facecolor=fig.get_facecolor())
+        print(f"  → Plot salvato: {output_path}")
+    plt.show()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. Orchestratore Fase 1
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_phase1(dataset_path: str, plots_dir: str = None) -> tuple:
@@ -500,18 +748,30 @@ def run_phase1(dataset_path: str, plots_dir: str = None) -> tuple:
     cov_df = covariance_matrix(df)
     print(cov_df.to_string(float_format=lambda x: f"{x:>12.4f}"))
 
-    # ── 5-7. Plot ─────────────────────────────────────────────────
-    print("\n\n[ STEP 5-7 ] Generazione plot...")
-    p_bar  = f"{plots_dir}/bar_stats.png"  if plots_dir else None
-    p_box  = f"{plots_dir}/boxplots.png"   if plots_dir else None
-    p_ecdf = f"{plots_dir}/ecdf_gaussian.png" if plots_dir else None
+    # ── 5. Matrice di correlazione ────────────────────────────────
+    print("\n\n[ STEP 5 ] Matrice di Correlazione  R_ij = C_ij / (σ_i · σ_j)")
+    print("-" * 55)
+    corr_df = correlation_from_cov(cov_df)
+    print(corr_df.to_string(float_format=lambda x: f"{x:>8.4f}"))
+
+    # ── 6-10. Plot ────────────────────────────────────────────────
+    print("\n\n[ STEP 6-10 ] Generazione plot...")
+    p_bar    = f"{plots_dir}/bar_stats.png"       if plots_dir else None
+    p_box    = f"{plots_dir}/boxplots.png"        if plots_dir else None
+    p_ecdf   = f"{plots_dir}/ecdf_gaussian.png"  if plots_dir else None
+    p_hist   = f"{plots_dir}/histograms.png"     if plots_dir else None
+    p_covhm  = f"{plots_dir}/covariance_heatmap.png"   if plots_dir else None
+    p_corrhm = f"{plots_dir}/correlation_heatmap.png"  if plots_dir else None
 
     plot_bar_stats(stats_df, output_path=p_bar)
     plot_boxplots(df,        output_path=p_box)
     plot_ecdf_vs_gaussian(df, output_path=p_ecdf)
+    plot_histograms(df,      output_path=p_hist)
+    plot_covariance_heatmap(cov_df,  output_path=p_covhm)
+    plot_correlation_heatmap(corr_df, output_path=p_corrhm)
 
     print("\n✅  Fase 1 completata.")
-    return df, stats_df, cov_df
+    return df, stats_df, cov_df, corr_df
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -522,6 +782,6 @@ if __name__ == "__main__":
     import os
     BASE = Path(__file__).resolve().parent.parent
     run_phase1(
-        dataset_path=str(BASE / "data" / "raw" / "muscular_dystrophy.csv"),
+        dataset_path=str(BASE / "data" / "raw" / "ncbi_muscular_dystrophy_raw.csv"),
         plots_dir=str(BASE / "data" / "processed" / "plots"),
     )

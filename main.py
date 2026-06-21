@@ -4,6 +4,11 @@
 
 import os
 from pathlib import Path
+import matplotlib
+
+if os.environ.get("NONINTERACTIVE", "") == "1":
+    matplotlib.use("Agg")
+
 from src.data_exploration import run_phase1
 from src.linear_regression import run_phase2, run_phase3, run_phase4, run_phase6
 from src.multivariate import run_phase5
@@ -17,11 +22,15 @@ TARGET_COL = "target_expression"
 
 
 def main():
-    dataset = DATASET if os.path.exists(DATASET) else str(
-        BASE_DIR / "data" / "raw" / "muscular_dystrophy.csv")
+    if not os.path.exists(DATASET):
+        print(f"\n❌  Dataset non trovato: {DATASET}")
+        print(f"    Esegui prima lo script di acquisizione dati:")
+        print(f"    python src/data_ingestion.py\n")
+        return
+    dataset = DATASET
 
     # ── FASE 1: Analisi 0-dimensionale ────────────────────────────────────────
-    df, stats_df, cov_df = run_phase1(
+    df, stats_df, cov_df, corr_df = run_phase1(
         dataset_path=dataset,
         plots_dir=PLOTS_DIR,
     )
@@ -65,7 +74,7 @@ def main():
     )
 
     # ── FASE 5: Modello Multilineare ──────────────────────────────────────────
-    theta, res_train, res_test = run_phase5(
+    theta, res_train, res_test, multi_metrics = run_phase5(
         df=df,
         target_col=TARGET_COL,
         plots_dir=PLOTS_DIR,
@@ -81,6 +90,39 @@ def main():
         plots_dir=PLOTS_DIR,
     )
 
+    # ── REPORT FINALE RIEPILOGATIVO ──────────────────────────────────────────
+    _print_final_summary(simple_metrics, multi_metrics, predictor_col, len(df))
+
+
+def _print_final_summary(simple_m: dict, multi_m: dict,
+                         predictor: str, n_samples: int):
+    """Stampa un report finale con tutte le metriche raccolte."""
+    print("\n\n" + "═" * 65)
+    print("  REPORT FINALE — Riepilogo Pipeline Completa")
+    print("═" * 65)
+    print(f"\n  Dataset : {n_samples} campioni")
+    print(f"  Predittore semplice : {predictor}")
+    print(f"\n  ┌─────────────────┬────────────────┬────────────────┐")
+    print(f"  │  Metrica        │  Reg. Semplice │  Reg. Multilin.│")
+    print(f"  ├─────────────────┼────────────────┼────────────────┤")
+    rows = [
+        ("MSE  (train)", "mse_train"),
+        ("RMSE (train)", "rmse_train"),
+        ("R²   (train)", "r2_train"),
+        ("MSE  (test) ", "mse_test"),
+        ("RMSE (test) ", "rmse_test"),
+        ("R²   (test) ", "r2_test"),
+    ]
+    for label, key in rows:
+        sv = simple_m.get(key, float("nan"))
+        mv = multi_m.get(key, float("nan"))
+        print(f"  │  {label}  │  {sv:12.6f}  │  {mv:12.6f}  │")
+    print(f"  └─────────────────┴────────────────┴────────────────┘")
+    print("\n" + "═" * 65)
+    print("  ✅  Pipeline completata con successo.")
+    print("═" * 65 + "\n")
+
 
 if __name__ == "__main__":
     main()
+

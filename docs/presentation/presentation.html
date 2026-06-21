@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentazione — Analisi Numerica e Modelli di Regressione per la Distrofia Muscolare</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d27;
+            --bg-card: #22253380;
+            --accent-blue: #4f8ef7;
+            --accent-orange: #f7a94f;
+            --accent-red: #f74f4f;
+            --accent-green: #a8ff78;
+            --accent-purple: #a855f7;
+            --text-primary: #f0f0f5;
+            --text-secondary: #aaaacc;
+            --border: #333344;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* ── Slide container ───────────────────────────────── */
+        .slides-wrapper {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            height: 100vh;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 8rem;
+            position: relative;
+        }
+
+        /* ── Typography ────────────────────────────────────── */
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 0.8rem;
+        }
+
+        p, li {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            padding: 0.4rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        ul li::before {
+            content: '▸';
+            color: var(--accent-blue);
+            position: absolute;
+            left: 0;
+            font-weight: 700;
+        }
+
+        strong { color: var(--text-primary); }
+
+        /* ── Cards ─────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            margin: 0.8rem 0;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .card-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .card.highlight {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 30px rgba(79, 142, 247, 0.1);
+        }
+
+        /* ── Formula ───────────────────────────────────────── */
+        .formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            color: var(--accent-orange);
+            background: rgba(247, 169, 79, 0.08);
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-orange);
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        /* ── Table ─────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.7rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 1rem;
+        }
+
+        th {
+            color: var(--accent-blue);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td { color: var(--text-secondary); }
+
+        /* ── Badge ─────────────────────────────────────────── */
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-green { background: rgba(168, 255, 120, 0.15); color: var(--accent-green); }
+        .badge-red   { background: rgba(247, 79, 79, 0.15);   color: var(--accent-red);   }
+        .badge-blue  { background: rgba(79, 142, 247, 0.15);  color: var(--accent-blue);  }
+
+        /* ── Subtitle ──────────────────────────────────────── */
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 2rem;
+            right: 3rem;
+            font-size: 0.9rem;
+            color: var(--border);
+            font-weight: 500;
+        }
+
+        /* ── Phase indicator ───────────────────────────────── */
+        .phase-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-right: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .phase-row {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0;
+        }
+
+        .phase-label {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── Navigation ────────────────────────────────────── */
+        .nav-hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            color: var(--border);
+            z-index: 100;
+        }
+
+        .nav-hint kbd {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* ── Metric card ───────────────────────────────────── */
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
+        .content-area {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* ── Responsive ────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .slide { padding: 2rem 3rem; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .card-grid, .card-grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="slides-wrapper" id="slidesWrapper">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 1 — Titolo -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h1>Analisi Numerica e Modelli di Regressione<br>per la Stima Continua del<br>Decadimento Muscolare</h1>
+        <p class="subtitle">Progetto B — Analisi dati e Regressione con output continuo</p>
+        <div class="card" style="max-width: 600px; text-align: center;">
+            <p style="margin-bottom: 0.5rem;"><strong>Corso:</strong> Analisi Numerica per l'Analisi dei Dati Biologici</p>
+            <p style="margin-bottom: 0.5rem;"><strong>LT:</strong> Biotecnologie per la Salute</p>
+            <p><strong>Docenti:</strong> Francesco Calabrò — Luisa D'Amore</p>
+        </div>
+        <span class="slide-number">1 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 2 — Contesto Clinico -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>🧬 Dominio Clinico: la Distrofia Muscolare</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Perché la DMD?</h3>
+                <ul>
+                    <li>La <strong>Distrofia Muscolare di Duchenne</strong> è una malattia neuromuscolare progressiva</li>
+                    <li>La progressione è quantificabile tramite <strong>biomarcatori continui</strong></li>
+                    <li>Soddisfa pienamente il vincolo del Progetto B: <strong>output strettamente continuo</strong></li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Potenziale Predittivo</h3>
+                <ul>
+                    <li>Modellare il decadimento muscolare tramite <strong>regressione</strong></li>
+                    <li>Stimare l'efficacia di terapie in fase di <strong>trial clinico</strong></li>
+                    <li>Anticipare <strong>criticità cliniche</strong> nella progressione</li>
+                </ul>
+            </div>
+        </div>
+        <span class="slide-number">2 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 3 — Dataset -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>🗂️ Dataset — NCBI GEO GSE38417</h2>
+        <div class="card" style="max-width: 800px;">
+            <table>
+                <tr><th>Proprietà</th><th>Valore</th></tr>
+                <tr><td>Accession</td><td><strong>GSE38417</strong></td></tr>
+                <tr><td>Titolo</td><td><em>Gene expression profiling of Duchenne muscular dystrophy</em></td></tr>
+                <tr><td>Piattaforma</td><td>GPL570 — Affymetrix Human Genome U133 Plus 2.0 Array</td></tr>
+                <tr><td>Campioni</td><td><strong>22 biopsie muscolari</strong> (pazienti DMD + controlli sani)</td></tr>
+                <tr><td>Target (y)</td><td>Espressione del gene <strong>DMD (distrofina)</strong> — variabile continua</td></tr>
+                <tr><td>Feature (X)</td><td>10 geni con <strong>correlazione massima</strong> al target</td></tr>
+            </table>
+        </div>
+        <div class="card" style="max-width: 800px;">
+            <h3>Acquisizione Programmatica</h3>
+            <ul>
+                <li>Download automatico da FTP NCBI tramite <code>urllib</code> (nessuna libreria esterna)</li>
+                <li>Parsing del Series Matrix File + annotazione piattaforma</li>
+                <li>Imputazione NaN con media di colonna (giustificazione: segnale sotto soglia)</li>
+            </ul>
+        </div>
+        <span class="slide-number">3 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 4 — Pipeline -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>🛠️ Pipeline dell'Analisi — 6 Fasi</h2>
+        <div class="content-area">
+            <div class="phase-row"><span class="phase-num">1</span><span class="phase-label"><strong>Analisi 0-dimensionale:</strong> statistiche, covarianza, ECDF vs Gaussiana, heatmap correlazione</span></div>
+            <div class="phase-row"><span class="phase-num">2</span><span class="phase-label"><strong>Regressione lineare:</strong> costruzione algebrica di y = ax + b (minimi quadrati)</span></div>
+            <div class="phase-row"><span class="phase-num">3</span><span class="phase-label"><strong>Train/Test split:</strong> 90/10 con validazione oggettiva su dati mai visti</span></div>
+            <div class="phase-row"><span class="phase-num">4</span><span class="phase-label"><strong>Interpolazione:</strong> punto medio, problema inverso, estrapolazione, input interattivo</span></div>
+            <div class="phase-row"><span class="phase-num">5</span><span class="phase-label"><strong>Multilineare:</strong> y = Xθ con Equazioni Normali (linalg.solve)</span></div>
+            <div class="phase-row"><span class="phase-num">6</span><span class="phase-label"><strong>Outlier:</strong> loop interattivo di pulizia con residuo massimo</span></div>
+        </div>
+        <div class="card" style="max-width: 800px; margin-top: 1.5rem;">
+            <p style="text-align: center;">
+                <span class="badge badge-red">⛔ scikit-learn</span> &nbsp;
+                <span class="badge badge-green">✅ numpy (algebra)</span> &nbsp;
+                <span class="badge badge-blue">✅ matplotlib</span> &nbsp;
+                <span class="badge badge-blue">✅ pandas</span> &nbsp;
+                <span class="badge badge-blue">✅ scipy.stats (solo CDF)</span>
+            </p>
+        </div>
+        <span class="slide-number">4 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 5 — Formule Chiave -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>📐 Implementazione Algebrica</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Regressione Semplice</h3>
+                <div class="formula">a = Σ(xᵢ - x̄)(yᵢ - ȳ) / Σ(xᵢ - x̄)²</div>
+                <div class="formula">b = ȳ - a · x̄</div>
+            </div>
+            <div class="card">
+                <h3>Regressione Multilineare</h3>
+                <div class="formula">θ = (XᵀX)⁻¹ Xᵀy</div>
+                <p style="margin-top: 0.5rem;">Risolto con <code>numpy.linalg.solve</code> per stabilità numerica</p>
+            </div>
+            <div class="card">
+                <h3>Covarianza Esplicita</h3>
+                <div class="formula">C = (1/n) Xc<sup>T</sup> Xc</div>
+            </div>
+            <div class="card">
+                <h3>Metriche da Zero</h3>
+                <div class="formula">MSE = (1/n) eᵀe</div>
+                <div class="formula">R² = 1 − SS_res / SS_tot</div>
+            </div>
+        </div>
+        <span class="slide-number">5 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 6 — Risultati -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>📊 Risultati Chiave</h2>
+        <div class="card-grid-3">
+            <div class="card highlight" style="text-align: center;">
+                <div class="metric-value">R² ≈ 0.99</div>
+                <div class="metric-label">Regressione Semplice (Training)</div>
+            </div>
+            <div class="card highlight" style="text-align: center;">
+                <div class="metric-value" style="color: var(--accent-purple);">R² ≈ 1.00</div>
+                <div class="metric-label">Multilineare (Training)</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <div class="metric-value" style="color: var(--accent-orange);">22</div>
+                <div class="metric-label">Campioni analizzati</div>
+            </div>
+        </div>
+        <div class="card" style="max-width: 900px; margin-top: 1rem;">
+            <h3>Confronto Modelli</h3>
+            <table>
+                <tr><th>Metrica</th><th>Semplice</th><th>Multilineare</th><th>Osservazione</th></tr>
+                <tr><td>MSE (train)</td><td>Basso</td><td>~ 0</td><td>Fit quasi perfetto con 10 feature</td></tr>
+                <tr><td>R² (train)</td><td>≈ 0.99</td><td>≈ 1.00</td><td>Attenzione: possibile overfitting</td></tr>
+                <tr><td>R² (test)</td><td>Robusto</td><td>Variabile</td><td>n=22 con 10 feature → basso rapporto n/p</td></tr>
+            </table>
+        </div>
+        <span class="slide-number">6 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 7 — Grafici -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>📈 Analisi Visiva — 14 Plot Generati</h2>
+        <div class="card-grid-3">
+            <div class="card">
+                <h3>Fase 1</h3>
+                <ul>
+                    <li>Bar plot indicatori</li>
+                    <li>Box plot affiancati</li>
+                    <li>ECDF vs Gaussiana</li>
+                    <li>Istogrammi</li>
+                    <li>Heatmap covarianza</li>
+                    <li>Heatmap correlazione</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Fase 2/3/4</h3>
+                <ul>
+                    <li>Scatter + retta OLS</li>
+                    <li>Boxplot train vs test</li>
+                    <li>Scatter train/test</li>
+                    <li>Interpolazione ed estrapolazione</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Fase 5/6</h3>
+                <ul>
+                    <li>Actual vs Predicted</li>
+                    <li>Scatter residui</li>
+                    <li>Istogramma residui</li>
+                    <li>Bar coefficienti θ</li>
+                    <li>Confronto modelli</li>
+                    <li>Pulizia outlier</li>
+                </ul>
+            </div>
+        </div>
+        <span class="slide-number">7 / 8</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 8 — Conclusioni -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="slide">
+        <h2>✅ Conclusioni</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Rigore Algebrico</h3>
+                <ul>
+                    <li>Ogni formula implementata <strong>da zero</strong> con numpy</li>
+                    <li><strong>Nessun</strong> uso di sklearn o funzioni preconfezionate</li>
+                    <li>Covarianza, minimi quadrati e metriche <strong>esplicite</strong></li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Validazione Oggettiva</h3>
+                <ul>
+                    <li>Split <strong>90/10</strong> riproducibile (seed=42)</li>
+                    <li>Metriche calcolate su <strong>dati mai visti</strong></li>
+                    <li>Pulizia outlier <strong>interattiva</strong> e documentata</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Esplorazione Visiva</h3>
+                <ul>
+                    <li><strong>14+ plot</strong> con tema scuro coerente</li>
+                    <li>Ogni scelta supportata da <strong>evidenza grafica</strong></li>
+                    <li>Heatmap, ECDF, box plot, scatter, istogrammi</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Architettura</h3>
+                <ul>
+                    <li>Pipeline modulare: <strong>6 moduli Python</strong></li>
+                    <li><strong>30 test unitari</strong> automatizzati</li>
+                    <li>Compatibile con <strong>locale + Google Colab</strong></li>
+                </ul>
+            </div>
+        </div>
+        <span class="slide-number">8 / 8</span>
+    </div>
+
+</div>
+
+<div class="nav-hint">
+    <kbd>←</kbd> <kbd>→</kbd> per navigare &nbsp;|&nbsp; <kbd>Home</kbd> per tornare all'inizio
+</div>
+
+<script>
+    const wrapper = document.getElementById('slidesWrapper');
+    const totalSlides = document.querySelectorAll('.slide').length;
+    let currentSlide = 0;
+
+    function goToSlide(n) {
+        currentSlide = Math.max(0, Math.min(n, totalSlides - 1));
+        wrapper.style.transform = `translateX(-${currentSlide * 100}vw)`;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+            e.preventDefault();
+            goToSlide(currentSlide + 1);
+        } else if (e.key === 'ArrowLeft') {
+            goToSlide(currentSlide - 1);
+        } else if (e.key === 'Home') {
+            goToSlide(0);
+        } else if (e.key === 'End') {
+            goToSlide(totalSlides - 1);
+        }
+    });
+
+    // Swipe support per touch
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    document.addEventListener('touchend', (e) => {
+        const diff = touchStartX - e.changedTouches[0].screenX;
+        if (Math.abs(diff) > 50) {
+            goToSlide(currentSlide + (diff > 0 ? 1 : -1));
+        }
+    });
+
+    // Click per avanzare
+    document.addEventListener('click', (e) => {
+        const halfWidth = window.innerWidth / 2;
+        if (e.clientX > halfWidth) {
+            goToSlide(currentSlide + 1);
+        } else {
+            goToSlide(currentSlide - 1);
+        }
+    });
+</script>
+
+</body>
+</html>

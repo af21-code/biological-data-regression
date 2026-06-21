@@ -16,11 +16,18 @@ I coefficienti a e b sono calcolati tramite le formule dei minimi quadrati
 derivate algebricamente, implementate con operazioni NumPy di base.
 """
 
+import os
+import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from src.metrics import mse, rmse, r_squared, residuals
+from src.plot_utils import base_fig, save_or_show
+
+# Flag per disabilitare i prompt interattivi (CI, test automatici)
+# Imposta la variabile d'ambiente NONINTERACTIVE=1 per skippare gli input()
+INTERACTIVE = os.environ.get("NONINTERACTIVE", "") != "1"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -383,17 +390,23 @@ def run_phase4(df: pd.DataFrame,
 
     # ── 4. Prompt interattivo ────────────────────────────────────────────────
     print(f"\n  [4.4] Input interattivo:")
-    try:
-        raw = input(f"        Inserisci un valore x (range osservato: "
-                    f"[{x_min:.4f}, {x_max:.4f}]): ").strip()
-        x_input   = float(raw)
-        y_input   = predict(x_input, a, b)
-        is_extrap = x_input < x_min or x_input > x_max
-        tipo      = "estrapolazione ⚠️" if is_extrap else "interpolazione ✅"
-        print(f"        ŷ({x_input:.4f}) = {y_input:.4f}  [{tipo}]")
-    except (ValueError, EOFError):
-        x_input, y_input = None, None
-        print("        Input non valido o non interattivo — skip.")
+    if INTERACTIVE:
+        try:
+            raw = input(f"        Inserisci un valore x (range osservato: "
+                        f"[{x_min:.4f}, {x_max:.4f}]): ").strip()
+            x_input   = float(raw)
+            y_input   = predict(x_input, a, b)
+            is_extrap = x_input < x_min or x_input > x_max
+            tipo      = "estrapolazione ⚠️" if is_extrap else "interpolazione ✅"
+            print(f"        ŷ({x_input:.4f}) = {y_input:.4f}  [{tipo}]")
+        except (ValueError, EOFError):
+            x_input, y_input = None, None
+            print("        Input non valido o non interattivo — skip.")
+    else:
+        # Modalità non-interattiva: usa il punto medio
+        x_input = x_mid
+        y_input = predict(x_input, a, b)
+        print(f"        [Non-interattivo] Uso x_mid = {x_input:.4f} → ŷ = {y_input:.4f}")
 
     # ── 5. Plot con tutti i punti speciali ───────────────────────────────────
     p_out = f"{plots_dir}/phase4_interpolation.png" if plots_dir else None
@@ -471,7 +484,11 @@ def run_phase6(df: pd.DataFrame,
         print(f"      x = {worst_x:.4f},  y = {worst_y:.4f},  |scarto| = {worst_e:.4f}")
 
         try:
-            ans = input("    Vuoi rimuoverlo dal dataset? (s/n): ").strip().lower()
+            if INTERACTIVE:
+                ans = input("    Vuoi rimuoverlo dal dataset? (s/n): ").strip().lower()
+            else:
+                print("    [Non-interattivo] Dataset accettato automaticamente.")
+                ans = "n"
         except EOFError:
             ans = "n"
 
@@ -515,28 +532,9 @@ def run_phase6(df: pd.DataFrame,
 # Funzioni di plotting private
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _base_fig(figsize=(10, 6)):
-    fig, ax = plt.subplots(figsize=figsize)
-    fig.patch.set_facecolor("#0f1117")
-    ax.set_facecolor("#1a1d27")
-    for spine in ax.spines.values():
-        spine.set_edgecolor("#333344")
-    ax.tick_params(colors="white")
-    return fig, ax
-
-
-def _save_or_show(fig, output_path):
-    plt.tight_layout()
-    if output_path:
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path, dpi=150, bbox_inches="tight",
-                    facecolor=fig.get_facecolor())
-        print(f"  → Plot salvato: {output_path}")
-    plt.show()
-
 
 def _plot_regression(x, y, a, b, x_label, y_label, title, output_path=None):
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     ax.scatter(x, y, color="#4f8ef7", alpha=0.8, s=60, zorder=3,
                label="Dati osservati")
     x_line = np.linspace(np.min(x), np.max(x), 300)
@@ -546,11 +544,11 @@ def _plot_regression(x, y, a, b, x_label, y_label, title, output_path=None):
     ax.set_ylabel(y_label, color="#aaaacc")
     ax.set_title(title, color="white", fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_train_test_boxplot(y_train, y_test, label, output_path=None):
-    fig, ax = _base_fig(figsize=(7, 5))
+    fig, ax = base_fig(figsize=(7, 5))
     bp = ax.boxplot(
         [y_train, y_test],
         labels=["Training", "Test"],
@@ -565,12 +563,12 @@ def _plot_train_test_boxplot(y_train, y_test, label, output_path=None):
     ax.set_title(f"Fase 3 — Distribuzione Training vs Test ({label})",
                  color="white", fontsize=12)
     ax.set_ylabel(label, color="#aaaacc")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_train_test_scatter(x_tr, x_te, y_tr, y_te, a, b,
                              x_label, y_label, output_path=None):
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     x_line = np.linspace(min(np.min(x_tr), np.min(x_te)),
                          max(np.max(x_tr), np.max(x_te)), 300)
     ax.scatter(x_tr, y_tr, color="#4f8ef7", alpha=0.8, s=60, zorder=3,
@@ -584,7 +582,7 @@ def _plot_train_test_scatter(x_tr, x_te, y_tr, y_te, a, b,
     ax.set_title("Fase 3 — Validazione Train/Test", color="white",
                  fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_interpolation(x, y, a, b,
@@ -592,7 +590,7 @@ def _plot_interpolation(x, y, a, b,
                         x_star, y_mean,
                         x_inp, y_inp,
                         x_label, y_label, output_path=None):
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     x_line = np.linspace(
         min(np.min(x), 0, x_inp or np.min(x)) - 0.5,
         max(np.max(x), x_inp or np.max(x)) + 0.5, 400)
@@ -617,12 +615,12 @@ def _plot_interpolation(x, y, a, b,
     ax.set_title("Fase 4 — Interpolazione ed Estrapolazione",
                  color="white", fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white", fontsize=8)
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)
 
 
 def _plot_outlier_result(x, y, a, b, x_label, y_label,
                          removed_ids, output_path=None):
-    fig, ax = _base_fig()
+    fig, ax = base_fig()
     x_line = np.linspace(np.min(x), np.max(x), 300)
     ax.scatter(x, y, color="#4f8ef7", alpha=0.85, s=60, zorder=3,
                label=f"Dataset pulito (n={len(x)})")
@@ -641,4 +639,4 @@ def _plot_outlier_result(x, y, a, b, x_label, y_label,
     ax.set_title("Fase 6 — Modello Finale dopo Pulizia Outlier",
                  color="white", fontsize=13, pad=10)
     ax.legend(facecolor="#0f1117", labelcolor="white")
-    _save_or_show(fig, output_path)
+    save_or_show(fig, output_path)

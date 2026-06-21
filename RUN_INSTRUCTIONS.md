@@ -79,3 +79,9 @@ python src/data_ingestion.py
 ```
 
 Se vuoi lanciare le singole analisi visive da Google Colab in futuro, fai riferimento alle istruzioni contenute nel file `notebooks/README_COLAB.md`.
+
+---
+
+## 4. Alternativa: Esecuzione su Google Colab
+
+Se non vuoi installare nulla sul tuo computer, puoi eseguire l'intero progetto su Google Colab. Basta caricare la cartella del progetto su Google Drive e aprire il notebook `notebooks/colab_pipeline.ipynb`. Trovi tutte le istruzioni in `notebooks/README_COLAB.md`.
