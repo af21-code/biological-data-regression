@@ -1,5 +1,7 @@
 # Analisi Numerica e Modelli di Regressione per la Stima Continua del Decadimento Muscolare
 
+![Tests](https://github.com/af21-code/biological-data-regression/actions/workflows/tests.yml/badge.svg)
+
 ## 📌 Contesto Accademico
 Questo repository contiene il codice e la documentazione sviluppati per il **Progetto B: Analisi dati e Regressione - output continuo**.
 Il lavoro è stato realizzato come prova d'esame per il **Corso di Analisi Numerica per l'Analisi dei Dati Biologici — LT in Biotecnologie per la salute**, tenuto dai docenti Francesco Calabrò e Luisa D'Amore.
