@@ -113,3 +113,9 @@ python src/data_ingestion.py
 ### Esecuzione su Google Colab
 
 Il progetto può essere eseguito interamente su Google Colab. Il notebook pronto all'uso si trova in `notebooks/colab_pipeline.ipynb`. Per le istruzioni dettagliate, consulta `notebooks/README_COLAB.md`.
+## ⚠️ Limiti e Sviluppi
+
+- **Selezione delle feature prima dello split.** I 10 probe predittori vengono scelti per correlazione con *y* su tutti i 22 campioni, prima della divisione train/test. Le metriche sul test sono quindi ottimistiche: la selezione andrebbe ripetuta solo sui dati di training (ad esempio dentro una leave-one-out).
+- **Probe dello stesso gene.** La piattaforma GPL570 ha più probe per il gene DMD; oggi viene escluso solo il probe target, per cui tra le feature possono comparire altri probe della distrofina, quasi duplicati di *y*. Escluderli renderebbe il problema più realistico.
+- **Pochi campioni.** Con 22 campioni e uno split 90/10 il test set contiene 2–3 osservazioni: l'R² sul test ha un'incertezza molto alta. Con così pochi dati è più adatta una validazione leave-one-out.
+- **Molte variabili, pochi campioni.** Scegliere 10 probe tra decine di migliaia su 22 campioni favorisce correlazioni spurie: i risultati vanno letti come esercizio numerico, non come evidenza biologica.
